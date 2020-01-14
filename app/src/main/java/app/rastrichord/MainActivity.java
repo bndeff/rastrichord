@@ -43,12 +43,18 @@ public class MainActivity extends AppCompatActivity
     private static final int COLOR_HEADER = 0xffd0d0d0;
     private static final int COLOR_BUTTON = 0xffd0d0d0;
     private static final int COLOR_SIG = 0xfff0f080;
+    private static final int COLOR_SIG_MAJOR = 0xffd0d06f; // 0xffffffc0
+    private static final int COLOR_SIG_MINOR = 0xfff0f080;
     private static final int COLOR_ACC = 0xff80e080;
+    private static final int COLOR_ACC_MAJOR = 0xff68b668; // 0xffb8ffb8
+    private static final int COLOR_ACC_MINOR = 0xff80e080;
+    private static final int COLOR_ERROR = 0xffff0000;
 
     private List<LinearLayout> rows;
     private List<Integer> notes;
     private List<Integer> sig;
     private List<Integer> acc;
+    private List<Integer> scale;
     private List<Integer> midiNotes;
     private List<Boolean> playing;
     private List<List<AppCompatButton>> buttons;
@@ -116,6 +122,7 @@ public class MainActivity extends AppCompatActivity
         notes = new ArrayList<>();
         sig = new ArrayList<>();
         acc = new ArrayList<>();
+        scale = new ArrayList<>();
         playing = new ArrayList<>();
         buttons = new ArrayList<>();
         for(int i=0; i<128; ++i) {
@@ -179,6 +186,7 @@ public class MainActivity extends AppCompatActivity
                 notes.add(i);
                 sig.add(0);
                 acc.add(0);
+                scale.add(0);
                 rowRoot.addView(row);
                 for(int j=0; j<7; ++j) {
                     if(j % 2 == 0) {
@@ -213,6 +221,7 @@ public class MainActivity extends AppCompatActivity
         setButtonColor(sigRow, -1, COLOR_HEADER);
         setButtonColor(sigRow, 0, COLOR_HEADER);
         setButtonColor(sigRow, 1, COLOR_HEADER);
+        updateSig();
         refreshColors();
         midiDriver = new MidiDriver();
     }
@@ -222,34 +231,70 @@ public class MainActivity extends AppCompatActivity
             int midiNote = notes.get(i);
             int note = midiNote % 12;
             int curSig = 0;
+            int curScale = 0;
             switch(note) {
                 // circle of fifths
                 case 0:  // C
-                    if(keySig >= +2) curSig = +1;
+                    if(keySig <= -6) curSig = -1;   // for 6+ flats, C becomes Cb
+                    if(keySig >= +2) curSig = +1;   // for 2+ sharps, C becomes C#
+                    if(keySig ==  0) curScale = +1; // 0 sharps/flats is C major
+                    if(keySig == +7) curScale = +1; // 7 sharps is C# major
+                    if(keySig == -7) curScale = +1; // 7 flats is Cb major
+                    if(keySig == -3) curScale = -1; // 3 flats is C minor
+                    if(keySig == +4) curScale = -1; // 4 sharps is C# minor
                     break;
                 case 2:  // D
-                    if(keySig <= -4) curSig = -1;
-                    if(keySig >= +4) curSig = +1;
+                    if(keySig <= -4) curSig = -1;   // for 4+ flats, D becomes Db
+                    if(keySig >= +4) curSig = +1;   // for 4+ sharps, D becomes D#
+                    if(keySig == +2) curScale = +1; // 2 sharps is D major
+                    if(keySig == -5) curScale = +1; // 5 flats is Db major
+                    if(keySig == -1) curScale = -1; // 1 flat is D minor
+                    if(keySig == +6) curScale = -1; // 6 sharps is D# minor
                     break;
                 case 4:  // E
-                    if(keySig <= -2) curSig = -1;
+                    if(keySig <= -2) curSig = -1;   // for 2+ flats, E becomes Eb
+                    if(keySig >= +6) curSig = +1;   // for 6+ sharps, E becomes E#
+                    if(keySig == +4) curScale = +1; // 4 sharps is E major
+                    if(keySig == -3) curScale = +1; // 3 flats is Eb major
+                    if(keySig == +1) curScale = -1; // 1 sharp is E minor
+                    if(keySig == -6) curScale = -1; // 6 flats is Eb minor
                     break;
                 case 5:  // F
-                    if(keySig >= +1) curSig = +1;
+                    if(keySig <= -7) curSig = -1;   // for 7+ flats, F becomes Fb
+                    if(keySig >= +1) curSig = +1;   // for 1+ sharps, F becomes F#
+                    if(keySig == -1) curScale = +1; // 1 flat is F major
+                    if(keySig == +6) curScale = +1; // 6 sharps is F# major
+                    if(keySig == -4) curScale = -1; // 4 flats is F minor
+                    if(keySig == +3) curScale = -1; // 3 sharps is F# minor
                     break;
                 case 7:  // G
-                    if(keySig <= -5) curSig = -1;
-                    if(keySig >= +3) curSig = +1;
+                    if(keySig <= -5) curSig = -1;   // for 5+ flats, G becomes Gb
+                    if(keySig >= +3) curSig = +1;   // for 3+ sharps, G becomes G#
+                    if(keySig == +1) curScale = +1; // 1 sharp is G major
+                    if(keySig == -6) curScale = +1; // 6 flats is Gb major
+                    if(keySig == -2) curScale = -1; // 2 flats is G minor
+                    if(keySig == +5) curScale = -1; // 5 sharps is G# minor
                     break;
                 case 9:  // A
-                    if(keySig <= -3) curSig = -1;
-                    if(keySig >= +5) curSig = +1;
+                    if(keySig <= -3) curSig = -1;   // for 3+ flats, A becomes Ab
+                    if(keySig >= +5) curSig = +1;   // for 5+ sharps, A becomes A#
+                    if(keySig == +3) curScale = +1; // 3 sharps is A major
+                    if(keySig == -4) curScale = +1; // 4 flats is Ab major
+                    if(keySig ==  0) curScale = -1; // 0 sharps/flats is A minor
+                    if(keySig == -7) curScale = -1; // 7 flats is Ab minor
+                    if(keySig == +7) curScale = -1; // 7 sharps is A# minor
                     break;
                 case 11: // B
-                    if(keySig <= -1) curSig = -1;
+                    if(keySig <= -1) curSig = -1;   // for 1+ flats, B becomes Bb
+                    if(keySig >= +7) curSig = +1;   // for 7+ sharps, B becomes B#
+                    if(keySig == +5) curScale = +1; // 5 sharps is B major
+                    if(keySig == -2) curScale = +1; // 2 flats is Bb major
+                    if(keySig == +2) curScale = -1; // 2 sharps is B minor
+                    if(keySig == -5) curScale = -1; // 5 flats is Bb minor
                     break;
             }
             sig.set(i, curSig);
+            scale.set(i, curScale);
         }
     }
 
@@ -268,12 +313,27 @@ public class MainActivity extends AppCompatActivity
         for(int i=0; i<numNotes; ++i) {
             int curSig = sig.get(i);
             int curAcc = acc.get(i);
+            int curScale = scale.get(i);
             LinearLayout row = rows.get(i);
             setButtonColor(row, -1, COLOR_BUTTON);
             setButtonColor(row, 0, COLOR_BUTTON);
             setButtonColor(row, 1, COLOR_BUTTON);
-            setButtonColor(row, curSig, COLOR_SIG);
-            setButtonColor(row, curAcc, COLOR_ACC);
+            if(curSig == curAcc) {
+                switch(curScale) {
+                    case  0: setButtonColor(row, curAcc, COLOR_ACC); break;
+                    case +1: setButtonColor(row, curAcc, COLOR_ACC_MAJOR); break;
+                    case -1: setButtonColor(row, curAcc, COLOR_ACC_MINOR); break;
+                    default: setButtonColor(row, curAcc, COLOR_ERROR);
+                }
+            } else {
+                switch(curScale) {
+                    case  0: setButtonColor(row, curSig, COLOR_SIG); break;
+                    case +1: setButtonColor(row, curSig, COLOR_SIG_MAJOR); break;
+                    case -1: setButtonColor(row, curSig, COLOR_SIG_MINOR); break;
+                    default: setButtonColor(row, curSig, COLOR_ERROR);
+                }
+                setButtonColor(row, curAcc, COLOR_ACC);
+            }
         }
     }
 
