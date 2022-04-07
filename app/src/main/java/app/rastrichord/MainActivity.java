@@ -1,9 +1,5 @@
 package app.rastrichord;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.AppCompatButton;
-import androidx.core.view.ViewCompat;
-
 import android.annotation.SuppressLint;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
@@ -15,12 +11,14 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Space;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.AppCompatButton;
+import androidx.core.view.ViewCompat;
+
 import org.billthefarmer.mididriver.MidiDriver;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static android.util.TypedValue.COMPLEX_UNIT_DIP;
 
 public class MainActivity extends AppCompatActivity
         implements View.OnClickListener, View.OnTouchListener {
@@ -111,7 +109,7 @@ public class MainActivity extends AppCompatActivity
                     case 3: button.setText(NATURAL); break;
                     case 5: button.setText(SHARP); break;
                 }
-                button.setAutoSizeTextTypeUniformWithConfiguration(8, 48, 1, COMPLEX_UNIT_DIP);
+                button.setTextSize(24.0f);
                 button.setGravity(Gravity.CENTER);
                 sigRow.addView(button);
             }
@@ -127,7 +125,7 @@ public class MainActivity extends AppCompatActivity
         buttons = new ArrayList<>();
         for(int i=0; i<128; ++i) {
             playing.add(false);
-            buttons.add(new ArrayList<AppCompatButton>());
+            buttons.add(new ArrayList<>());
         }
         for(int i=maxNote; i>=minNote; --i){
             NoteType nt = noteType(i);
